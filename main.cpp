@@ -4,7 +4,7 @@
 #include <cppconn/resultset.h>
 #include <SDL2/SDL.h>
 
-
+#include <string>
 using namespace std; 
 
 sql::Connection *con = nullptr; 
@@ -24,7 +24,8 @@ void connectDatabase(){
 	}			
 }
 
-void searchDatabase(string userInput) {	
+string searchDatabase(string userInput) {	
+	string result = "";
 	try {
 		string input = "%" + userInput + "%"; 
 		string query = "select * from search where description  LIKE  ?; " ; 
@@ -33,27 +34,53 @@ void searchDatabase(string userInput) {
 		sql::ResultSet* res = pstmt->executeQuery(); 
 		while (res-> next()) {
 			string desc = res->getString("description"); 
-			cout << desc<< endl;  
-
+			result += desc + "\n";
 		}
+		delete res; 
+		delete pstmt; 
 	}catch(sql::SQLException &e) {
 		cerr << "Unable to process input " << endl ;	
 				
 	}	
-
+	return result ;
 	
 
 }
 
-void mainPage(){
-	while(true){
-		cin.clear();
-		string userInput; 
-		cout << "Please insert what you would like to search" << endl; 
-		getline(cin,userInput);
-		searchDatabase(userInput); 		
+void mainPage(SDL_Renderer* renderer, SDL_Window* window){
+	string userInput = "" ; 
+	string output= ""; 
+	SDL_Event e ; 
+	bool quit = false ; 
+	while (!quit) {
+		SDL_SetRenderDrawColor(renderer,255,255,255,255); 
+		SDL_RenderClear(renderer); 
+		SDL_Rect inputBox = {50,50,500,50}; 
+		SDL_Rect outputBox = {50,150,500,300};
+		SDL_SetRenderDrawColor(renderer, 200,200,200,255); 
+		SDL_RenderFillRect(renderer, &inputBox); 
+
+		SDL_SetRenderDrawColor(renderer,230,230,230,255); 
+		SDL_RenderFillRect(renderer, &outputBox); 
+		SDL_RenderPresent(renderer); 
+		while(SDL_PollEvent(&e)){
+			if (e.type == SDL_QUIT) {
+				quit = true; 
+			}else if (e.type == SDL_TEXTINPUT ||e.type == SDL_KEYDOWN) {
+
+				if(e.key.keysym.sym == SDLK_RETURN){
+					output = searchDatabase(userInput); 
+					userInput = ""; 
+				}else if (e.key.keysym.sym == SDLK_BACKSPACE && !userInput.empty()){
+					userInput.pop_back(); 
+				}else if (e.type == SDL_TEXTINPUT){
+					userInput += e.text.text;
+				}
+			}		
+		}
 	}
 }
+
 int main () {
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0 ) {
@@ -75,15 +102,12 @@ int main () {
 
 
 	}	
-	SDL_Event e ; 
-	bool quit = false ; 
-	while (!quit) {
-		while(SDL_PollEvent(&e)){
-			if (e.type == SDL_QUIT) {
-				quit = true; 
-			}		
-		}
-	}
+
 	connectDatabase();
-	mainPage();
+	if (con) {
+		mainPage(renderer, window);
+	}
+	SDL_DestroyRenderer(renderer); 
+	SDL_DestroyWindow(window);
+	SDL_Quit();
 }
