@@ -4,7 +4,7 @@
 #include <cppconn/resultset.h>
 #include <SDL2/SDL_ttf.h> 
 #include <SDL2/SDL.h>
-
+#include <sstream> 
 #include <string>
 using namespace std; 
 
@@ -47,14 +47,20 @@ string searchDatabase(string userInput) {
 	
 
 }
-void renderText( SDL_Renderer* renderer , TTF_Font* font , string& text	, int x, int y , SDL_color color_{
-		SDL_Surface* surface = TTF_RenderTextBlended(font,text.c_str(),color); 
-		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderere, surface) ;
-		SDL_Rect destRect = {x,y, surface->w, surface-h}; 
+void renderText( SDL_Renderer* renderer , TTF_Font* font ,const string& text	, int x, int y , SDL_Color color){
+	stringstream ss(text); 
+	string line ; 
+	int lineHeight = TTF_FontHeight(font); 
+	while (getline(ss,line)){
+		SDL_Surface* surface = TTF_RenderText_Blended(font,line.c_str(),color); 
+		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface) ;
+		SDL_Rect destRect = {x,y, surface->w, surface->h}; 
 		SDL_RenderCopy(renderer,texture,nullptr, &destRect); 
 		SDL_FreeSurface(surface) ;
 		SDL_DestroyTexture(texture); 
-		}
+		y += lineHeight ;
+	}
+}
 
 void mainPage(SDL_Renderer* renderer, SDL_Window* window, TTF_Font* font ){
 	string userInput = "" ; 
@@ -72,7 +78,7 @@ void mainPage(SDL_Renderer* renderer, SDL_Window* window, TTF_Font* font ){
 		SDL_SetRenderDrawColor(renderer,230,230,230,255); 
 		SDL_RenderFillRect(renderer, &outputBox); 
 		renderText(renderer,font , "Input: " + userInput , 60,60,{0,0,0,255});
-		renderText(renderer, fotn , "Output: " + output , 60,160,{0,0,0,255});
+		renderText(renderer, font , "Output: " + output , 60,160,{0,0,0,255});
 		
 		SDL_RenderPresent(renderer); 
 
@@ -91,7 +97,9 @@ void mainPage(SDL_Renderer* renderer, SDL_Window* window, TTF_Font* font ){
 				}
 			}		
 		}
+
 	}
+	SDL_StopTextInput();
 }
 
 int main () {
@@ -120,11 +128,11 @@ int main () {
 
 
 	}	
-	TTF_font* font = TTF_OpenFont("arial.ttf",24); 
+	TTF_Font* font = TTF_OpenFont("/usr/share/fonts/truetype/liberation/LiberationSansNarrow-BoldItalic.ttf",24); 
 	if (!font) {
 		cerr << "Font cannot be loaded " << TTF_GetError() << endl; 
 		SDL_DestroyRenderer(renderer) ; 
-		SDL_DesetroyWindow(window); 
+		SDL_DestroyWindow(window); 
 		SDL_Quit(); 
 		return -1 ; 
 	}
