@@ -2,6 +2,7 @@
 #include <mysql_driver.h>
 #include <cppconn/prepared_statement.h>
 #include <cppconn/resultset.h>
+#include <SDL2/SDL_ttf.h> 
 #include <SDL2/SDL.h>
 
 #include <string>
@@ -46,8 +47,16 @@ string searchDatabase(string userInput) {
 	
 
 }
+void renderText( SDL_Renderer* renderer , TTF_Font* font , string& text	, int x, int y , SDL_color color_{
+		SDL_Surface* surface = TTF_RenderTextBlended(font,text.c_str(),color); 
+		SDL_Texture* texture = SDL_CreateTextureFromSurface(renderere, surface) ;
+		SDL_Rect destRect = {x,y, surface->w, surface-h}; 
+		SDL_RenderCopy(renderer,texture,nullptr, &destRect); 
+		SDL_FreeSurface(surface) ;
+		SDL_DestroyTexture(texture); 
+		}
 
-void mainPage(SDL_Renderer* renderer, SDL_Window* window){
+void mainPage(SDL_Renderer* renderer, SDL_Window* window, TTF_Font* font ){
 	string userInput = "" ; 
 	string output= ""; 
 	SDL_Event e ; 
@@ -62,7 +71,11 @@ void mainPage(SDL_Renderer* renderer, SDL_Window* window){
 
 		SDL_SetRenderDrawColor(renderer,230,230,230,255); 
 		SDL_RenderFillRect(renderer, &outputBox); 
+		renderText(renderer,font , "Input: " + userInput , 60,60,{0,0,0,255});
+		renderText(renderer, fotn , "Output: " + output , 60,160,{0,0,0,255});
+		
 		SDL_RenderPresent(renderer); 
+
 		while(SDL_PollEvent(&e)){
 			if (e.type == SDL_QUIT) {
 				quit = true; 
@@ -88,6 +101,11 @@ int main () {
 		return -1 ;
 
 	}
+	if (TTF_Init() < 0 ) {
+		cerr << "TTF failed to be initiated " << TTF_GetError() << endl; 
+		SDL_Quit(); 
+		return -1 ;
+	}
 	SDL_Window* window = SDL_CreateWindow("Search System" , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED,SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); 
 	if (!window){
 		cerr << "Winidow cannot be opened " << SDL_GetError() << endl; 
@@ -102,10 +120,18 @@ int main () {
 
 
 	}	
+	TTF_font* font = TTF_OpenFont("arial.ttf",24); 
+	if (!font) {
+		cerr << "Font cannot be loaded " << TTF_GetError() << endl; 
+		SDL_DestroyRenderer(renderer) ; 
+		SDL_DesetroyWindow(window); 
+		SDL_Quit(); 
+		return -1 ; 
+	}
 
 	connectDatabase();
 	if (con) {
-		mainPage(renderer, window);
+		mainPage(renderer, window, font );
 	}
 	SDL_DestroyRenderer(renderer); 
 	SDL_DestroyWindow(window);
